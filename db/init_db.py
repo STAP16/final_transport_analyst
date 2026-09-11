@@ -111,7 +111,8 @@ def create_table_detectors_aggregates():
 		aggregate_type String,
 		period_value String,
 		avg_intensity Float64,
-		avg_speed Float64
+		avg_speed Float64,
+		irregularity Nullable(Float64)
 	)
 	ENGINE = MergeTree
 	ORDER BY (detector_id, aggregate_type, period_value)
@@ -147,7 +148,7 @@ def create_table_detector_model_comprasion():
 	client.command(f"""
 	CREATE TABLE IF NOT EXISTS {db}.{name}
 	(
-		detector_id UInt64,
+		detector_id String,
 		edge_id UInt64,
 		actual_intensity Float64,
 		model_intensity Float64,

@@ -26,6 +26,7 @@ df["weekday"] = df["timestamp"].dt.day_name()
 def create_aggregation_dataframe(
     group_by: list[str],
     aggregation_type: str,
+    calculate_irregularity: bool = False,
 ) -> DataFrame:
 
     agg_df = (
@@ -44,10 +45,22 @@ def create_aggregation_dataframe(
         .agg("-".join, axis=1)
     )
 
+    if calculate_irregularity:
+        total = (
+            agg_df.groupby("detector_id")["avg_intensity"]
+            .transform("sum")
+        )
+
+        agg_df["irregularity"] = (
+            agg_df["avg_intensity"] / total
+        )
+    else:
+        agg_df["irregularity"] = None
+
     return agg_df
 
 
-hourly = create_aggregation_dataframe(["hour"], "hour")
+hourly = create_aggregation_dataframe(["hour"], "hour", True)
 weekday_profile = create_aggregation_dataframe(["weekday"], "weekday")
 daily = create_aggregation_dataframe(["date"], "date")
 weekly = create_aggregation_dataframe(["week"], "week")
@@ -61,7 +74,8 @@ columns = [
 	"aggregate_type",
 	"period_value",
 	"avg_intensity",
-	"avg_speed"
+	"avg_speed",
+    "irregularity"
 ]
 aggregates = pd.concat(
 	[
