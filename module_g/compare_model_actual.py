@@ -4,6 +4,7 @@
 
 from clickhouse_connect import get_client
 import numpy as np
+import pandas as pd
 client = get_client(host="localhost", username="click", password="click", port=8123)
 
 edges = client.query_df("""SELECT * FROM transport.transport_edges""")
@@ -85,8 +86,19 @@ cols = [
 
 client.insert_df(table="transport.detector_model_comprasion", df=comprasion[cols], column_names=cols)
 
-print('MAE: ', mae)
-print("RMSE: ", rmse)
-print("MAPE: ", mape)
-print("CORRELATION: ", correlation)
-print("WORST:\n", worst)
+# Вставляем метрики в таблицу, которая пригодится для модуля Д
+
+validation_metrics = pd.DataFrame([
+    {"metric": "MAE", "value": mae},
+    {"metric": "RMSE", "value": rmse},
+    {"metric": "MAPE", "value": mape},
+    {"metric": "Correlation", "value": correlation},
+])
+
+client.insert_df(
+    table="transport.validation_metrics",
+    df=validation_metrics,
+    column_names=["metric", "value"]
+)
+
+print("Вставлено метрик качества: ", len(validation_metrics))

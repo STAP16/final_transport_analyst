@@ -42,7 +42,8 @@ def create_table_transport_edges():
 		model_speed Float64,
 		passenger_flow Float64,
 		capacity Float64,
-		geometry String
+		geometry String,
+		load_ratio Float64
 	)
 	ENGINE = MergeTree
 	ORDER BY edge_id
@@ -201,6 +202,18 @@ def create_table_accessibility_results():
 	"""
 	)
 
+def create_table_validation_metric(): 
+	name = "validation_metrics"
+
+	client.command(f"""CREATE TABLE {db}.validation_metrics
+	(
+		metric String,
+		value Float64
+	)
+	ENGINE = MergeTree
+	ORDER BY metric""")
+
+
 
 def init_db():
 	client.command(f"DROP DATABASE IF EXISTS {db}")
@@ -218,6 +231,7 @@ def init_db():
 
 	create_table_od_matrix()
 	create_table_accessibility_results()
+	create_table_validation_metric()
 
 	print(f"database: {db}, has been created")
 

@@ -28,6 +28,10 @@ edges.columns = [
     "geometry"
 ]
 
+edges["load_ratio"] = (
+    edges["model_intensity"] / edges["capacity"]
+)
+
 edges["length_m"] = edges["length_m"] * 1000
 
 client.insert_df(
