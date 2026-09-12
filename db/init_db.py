@@ -163,6 +163,45 @@ def create_table_detector_model_comprasion():
 	"""
 	)
 
+# Необходимы для модуля Д
+
+def create_table_od_matrix():
+	name = "od_matrix"
+
+	# Склеивание фактических данных и данных с модели
+	# Айди детектора, Айди узла, реальная интенсивность, интенсивность модели, скорость модели, вместимость человек, дистанция, абсолютная ошибка, средне квадратичная ошибка
+
+	client.command(f"""
+	CREATE TABLE IF NOT EXISTS {db}.{name}
+	(
+		origin_id UInt64,
+		destination_id UInt64,
+		flow Float64
+	)
+	ENGINE = MergeTree
+	ORDER BY(origin_id, destination_id)
+	"""
+	)
+
+
+def create_table_accessibility_results():
+	name = "accessibility_results"
+
+	# Склеивание фактических данных и данных с модели
+	# Айди детектора, Айди узла, реальная интенсивность, интенсивность модели, скорость модели, вместимость человек, дистанция, абсолютная ошибка, средне квадратичная ошибка
+
+	client.command(f"""
+	CREATE TABLE {db}.{name}
+	(
+		zone_id UInt64,
+		accessibility Float64
+	)
+	ENGINE = MergeTree
+	ORDER BY zone_id;
+	"""
+	)
+
+
 def init_db():
 	client.command(f"DROP DATABASE IF EXISTS {db}")
 	client.command(f"CREATE DATABASE IF NOT EXISTS {db}")
@@ -174,6 +213,11 @@ def init_db():
 	create_table_transport_zones()
 	create_table_detectors_measurements()
 	create_table_detectors()
+
+	# Для модуля Д
+
+	create_table_od_matrix()
+	create_table_accessibility_results()
 
 	print(f"database: {db}, has been created")
 

@@ -3,6 +3,7 @@
 # model_speed
 
 from clickhouse_connect import get_client
+import numpy as np
 client = get_client(host="localhost", username="click", password="click", port=8123)
 
 edges = client.query_df("""SELECT * FROM transport.transport_edges""")

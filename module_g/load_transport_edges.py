@@ -3,8 +3,10 @@ import numpy as np
 from clickhouse_connect import get_client
 client = get_client(host="localhost", username="click", password="click", port=8123)
 
-model = pd.read_excel(r"module_g\Отрезки.xlsx", skiprows=2)
+model = pd.read_excel(r"module_g\Отрезки.xlsx", skiprows=2) # Это уже файл с расчетными данными
 print(model.columns.tolist())
+
+# Максимальная пропускная способность, длина и геометрия должны совпасть именно с названиями в твоей конкретной выгрузке RITM.
 
 edges = model[[
     "ID отрезка",
@@ -32,3 +34,5 @@ client.insert_df(
     "transport.transport_edges",
     edges
 )
+
+print("Загружено: ", len(edges))
