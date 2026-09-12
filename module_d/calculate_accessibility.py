@@ -8,7 +8,7 @@ client = get_client(
     port=8123
 )
 
-df = pd.read_excel(r'module_d\matrices_106_54.xlsx', sheet_name="Данные Матрицы")
+df = pd.read_excel(r'module_d\cost_matrix_ttc.xlsx', sheet_name="Данные Матрицы")
 
 # melt - превращаем в обычную таблицу
 costs = df.melt(
