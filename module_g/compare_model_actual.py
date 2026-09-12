@@ -2,28 +2,17 @@
 # model_intensity
 # model_speed
 
-import pandas as pd
-import numpy as np
 from clickhouse_connect import get_client
 client = get_client(host="localhost", username="click", password="click", port=8123)
 
-model = pd.read_excel(r"module_g\Отрезки.xlsx", skiprows=2)
-print(model.columns.tolist())
+edges = client.query_df("""SELECT * FROM transport.transport_edges""")
 
-model = model[[
-    "ID отрезка",
-    "Нагрузка [ТС] ИТ(ПА)",
-    "vАкт-СисТрИТ(L,ПА)",
-    "Нагрузка [Чел]-ОТ(ПА)"
-]]
-
-
-model.columns = [
+model_for_comparison = edges[[
     "edge_id",
     "model_intensity",
     "model_speed",
     "passenger_flow"
-]
+]]
 
 mapping = client.query_df("""SELECT * FROM transport.detector_edge_mapping""")
 
@@ -43,7 +32,7 @@ actual = actual.merge(
 )
 
 comprasion = actual.merge(
-	model,
+	model_for_comparison,
 	on="edge_id",
 	how="inner"
 )
