@@ -1,9 +1,6 @@
 import pandas as pd
 from pandas import DataFrame
-
-from clickhouse_connect import get_client
-
-client = get_client(host="localhost", username="click", password="click", port=8123)
+from db.connection import engine
 
 db = "transport"
 
@@ -95,5 +92,10 @@ aggregates["period_value"] = aggregates["period_value"].astype(str)
 aggregates["avg_intensity"] = aggregates["avg_intensity"].astype(float)
 aggregates["avg_speed"] = aggregates["avg_speed"].astype(float)
 
-client.insert_df(f"{db}.detectors_aggregates", aggregates)
+aggregates.to_sql(
+    "detectors_aggregates",
+    engine,
+    if_exists="append",
+    index=False
+)
 print("Всавка выполнена успешно: ", len(aggregates))

@@ -1,12 +1,5 @@
 import pandas as pd
-from clickhouse_connect import get_client
-
-client = get_client(
-    host="localhost",
-    username="click",
-    password="click",
-    port=8123
-)
+from db.connection import engine
 
 df = pd.read_excel(r'module_d\cost_matrix_ttc.xlsx', sheet_name="Данные Матрицы")
 
@@ -45,6 +38,6 @@ accessibility = (
 
 print(accessibility)
 
-client.insert_df("transport.accessibility_results", accessibility)
+accessibility.to_sql("accessibility_results", engine, if_exists="append", index=False)
 
 print("Вставлено: ", len(accessibility))

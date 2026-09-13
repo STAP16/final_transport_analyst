@@ -1,4 +1,5 @@
 import psycopg
+from db.connection import get_connection
 
 db = "transport"
 
@@ -22,13 +23,7 @@ def recreate_database():
 
 recreate_database()
 
-conn = psycopg.connect(
-	host="127.0.0.1",
-	port=5433,
-	dbname=db,
-	user="postgres",
-	password="postgres"
-)
+conn = get_connection()
 
 
 def create_table_transport_zones():

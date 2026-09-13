@@ -1,12 +1,6 @@
 import pandas as pd
-from clickhouse_connect import get_client
+from db.connection import engine
 
-client = get_client(
-    host="localhost",
-    username="click",
-    password="click",
-    port=8123
-)
 
 
 def prepare_matrix(path):
@@ -65,9 +59,11 @@ od = od[
 
 print(od.head())
 
-client.insert_df(
-    "transport.od_matrix",
-    od
+od.to_sql(
+    "od_matrix",
+    engine,
+    if_exists="append",
+    index=False
 )
 
 print("Вставлено в таблицу: ", len(od))

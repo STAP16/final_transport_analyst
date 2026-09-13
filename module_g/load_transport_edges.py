@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from clickhouse_connect import get_client
-client = get_client(host="localhost", username="click", password="click", port=8123)
+from db.connection import engine
 
 model = pd.read_excel(r"module_g\Отрезки.xlsx", skiprows=2) # Это уже файл с расчетными данными
 print(model.columns.tolist())
@@ -34,9 +33,11 @@ edges["load_ratio"] = (
 
 edges["length_m"] = edges["length_m"] * 1000
 
-client.insert_df(
-    "transport.transport_edges",
-    edges
+edges.to_sql(
+    "transport_edges",
+    engine,
+    if_exists="append",
+    index=False
 )
 
 print("Загружено: ", len(edges))

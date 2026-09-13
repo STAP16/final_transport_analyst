@@ -2,12 +2,14 @@
 # model_intensity
 # model_speed
 
-from clickhouse_connect import get_client
 import numpy as np
 import pandas as pd
-client = get_client(host="localhost", username="click", password="click", port=8123)
 
-edges = client.query_df("""SELECT * FROM transport.transport_edges""")
+from db.connection import engine
+
+
+
+edges = pd.read_sql("""SELECT * FROM transport_edges""", engine)
 
 model_for_comparison = edges[[
     "edge_id",
@@ -16,16 +18,16 @@ model_for_comparison = edges[[
     "passenger_flow"
 ]]
 
-mapping = client.query_df("""SELECT * FROM transport.detector_edge_mapping""")
+mapping = pd.read_sql("""SELECT * FROM detector_edge_mapping""", engine)
 
-actual = client.query_df("""
+actual = pd.read_sql("""
     SELECT
         detector_id,
         avg(avg_intensity) AS actual_intensity
-    FROM transport.detectors_aggregates
+    FROM detectors_aggregates
     WHERE aggregate_type = 'date'
     GROUP BY detector_id
-""")
+""", engine)
 
 actual = actual.merge(
 	mapping,
@@ -84,7 +86,13 @@ cols = [
 	"percentage_error"
 ]
 
-client.insert_df(table="transport.detector_model_comprasion", df=comprasion[cols], column_names=cols)
+
+comprasion[cols].to_sql(
+    "detector_model_comprasion",
+    engine,
+    if_exists="append",
+    index=False
+)
 
 # Вставляем метрики в таблицу, которая пригодится для модуля Д
 
@@ -95,10 +103,6 @@ validation_metrics = pd.DataFrame([
     {"metric": "Correlation", "value": correlation},
 ])
 
-client.insert_df(
-    table="transport.validation_metrics",
-    df=validation_metrics,
-    column_names=["metric", "value"]
-)
+validation_metrics.to_sql("validation_metrics", engine, if_exists="append", index=False)
 
 print("Вставлено метрик качества: ", len(validation_metrics))

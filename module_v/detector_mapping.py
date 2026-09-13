@@ -1,11 +1,8 @@
 import pandas as pd
 import geopandas as gpd
-
-from clickhouse_connect import get_client
-
-client = get_client(host="localhost", username="click", password="click", port=8123)
-
+from db.connection import engine
 db = "transport"
+
 
 
 df = pd.read_csv(r"module_v\detectors.csv")
@@ -42,9 +39,11 @@ mapping = mapping[["detector_id", "no", "distance_m"]]
 mapping.columns = ["detector_id", "edge_id", "distance_m"]
 
 # Вставка
-client.insert_df(
-    f"{db}.detector_edge_mapping",
-    mapping
+mapping.to_sql(
+	"detector_edge_mapping",
+	engine,
+	if_exists="append",
+	index=False
 )
 
 print("Данные успешно вставлены: ", len(mapping))
