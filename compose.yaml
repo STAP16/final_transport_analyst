@@ -17,6 +17,20 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - clickhouse_logs:/var/log/clickhouse-server
+
+  postgres:
+    image: postgres:16
+    container_name: transport-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: transport
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # Windows PostgreSQL uses port 5432; expose Docker PostgreSQL on 5433.
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
   
   metabase:
     image: metabase/metabase:latest
@@ -25,13 +39,15 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - clickhouse
+      - postgres
     volumes:
       - metabase_data:/metabase-data
     environment:
       MB_DB_FILE: /metabase-data/metabase.db
 
+
 volumes:
   clickhouse_data:
   clickhouse_logs:
   metabase_data:
+  postgres_data:

@@ -1,54 +1,85 @@
-from clickhouse_connect import get_client
-
-client = get_client(host="localhost", username="click", password="click", port=8123)
+import psycopg
 
 db = "transport"
 
+def recreate_database():
+	admin_conn = psycopg.connect(
+		host="127.0.0.1",
+		port=5433,
+		dbname="postgres", # Подключаемся не к transport
+		user="postgres",
+		password='postgres'
+	)
+
+	admin_conn.autocommit = True
+	with admin_conn.cursor() as cursor:
+		cursor.execute(f"DROP DATABASE IF EXISTS {db}")
+		cursor.execute(f"CREATE DATABASE {db}")
+
+	admin_conn.close()
+
+# Создаем бд
+
+recreate_database()
+
+conn = psycopg.connect(
+	host="127.0.0.1",
+	port=5433,
+	dbname=db,
+	user="postgres",
+	password="postgres"
+)
+
+
 def create_table_transport_zones():
 
-	name = "transport_zones "
+	name = "transport_zones"
 
 	# Таблица транспортных зон
 	# Айди, название, кол-во людей, кол-во рабочих мест, геомитрия зоны
 
-	client.command(f"""
-	CREATE TABLE IF NOT EXISTS {db}.{name}
+	sql = f"""
+	CREATE TABLE IF NOT EXISTS {name}
 	(
-		zone_id UInt64,
-		name String,
-		population UInt64,
-		workplaces UInt64,
-		geometry String
+		zone_id BIGINT PRIMARY KEY,
+		name TEXT,
+		population BIGINT,
+		workplaces BIGINT,
+		geometry TEXT
 	)
-	ENGINE = MergeTree
-	ORDER BY zone_id
 	"""
-	)
+
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
 
 
 def create_table_transport_edges():
 
-	name = "transport_edges "
+	name = "transport_edges"
 
 	# Таблица трансопртных узлов (участки дороги)
 	# айди, длина, интенсивность,полученная с модели. Скорость с модели, пассажиропоток на участке транспортной сети (Нагрузка [Чел]-ОТ(ПА) из РИТМ), вместимость машин (Максимальная пропускная способность из РИТМ), геометрия 
 
-	client.command(f"""
-	CREATE TABLE IF NOT EXISTS {db}.{name}
+	sql = f"""
+	CREATE TABLE IF NOT EXISTS {name}
 	(
-		edge_id UInt64,
-		length_m Float64,
-		model_intensity Float64,
-		model_speed Float64,
-		passenger_flow Float64,
-		capacity Float64,
-		geometry String,
-		load_ratio Float64
+		edge_id BIGINT PRIMARY KEY,
+		length_m FLOAT,
+		model_intensity FLOAT,
+		model_speed FLOAT,
+		passenger_flow FLOAT,
+		capacity FLOAT,
+		geometry TEXT,
+		load_ratio FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY edge_id
+
 	"""
-	)
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
 
 
 def create_table_detectors():
@@ -59,19 +90,20 @@ def create_table_detectors():
 	# Таблица детекторов (Скорее всего выдадут)
 	# Айди, имя, longtude (Долгота), latude(Широта)
 
-	client.command(f"""
-	CREATE TABLE IF NOT EXISTS {db}.{name}
+	sql = f"""
+	CREATE TABLE IF NOT EXISTS {name}
 	(
-		detector_id UInt64,
-		name String,
-		lon Float64,
-		lat Float64
+		detector_id BIGINT PRIMARY KEY,
+		name TEXT,
+		lon FLOAT,
+		lat FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY detector_id
 	"""
-	)
 
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
 
 def create_table_detectors_measurements():
 
@@ -81,18 +113,21 @@ def create_table_detectors_measurements():
 	# Айди, время детекта, интенсивность, скорость
 
 
-	client.command(f"""
-	CREATE TABLE IF NOT EXISTS {db}.{name}
+	sql = f"""
+	CREATE TABLE IF NOT EXISTS {name}
 	(
-		detector_id UInt64,
-		measured_at DateTime64(3), 
-		intensity Float64,
-		speed Float64
+		detector_id BIGINT PRIMARY KEY,
+		measured_at TIMESTAMP, 
+		intensity FLOAT,
+		speed FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY detector_id
 	"""
-	)
+
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
+	
 
 
 def create_table_detectors_aggregates():
@@ -105,20 +140,23 @@ def create_table_detectors_aggregates():
 	# Средняя интенсивность
 	# Средняя скорость
 
-	client.command(f"""
-	CREATE TABLE IF NOT EXISTS {db}.{name}
+	sql = f"""
+	CREATE TABLE IF NOT EXISTS {name}
 	(
-		detector_id String,
-		aggregate_type String,
-		period_value String,
-		avg_intensity Float64,
-		avg_speed Float64,
-		irregularity Nullable(Float64)
+		detector_id TEXT,
+		aggregate_type TEXT,
+		period_value TEXT,
+		avg_intensity FLOAT,
+		avg_speed FLOAT,
+		irregularity FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY (detector_id, aggregate_type, period_value)
 	"""
-	)
+
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
+	
 
 
 def create_table_detector_edge_mapping():
@@ -128,17 +166,21 @@ def create_table_detector_edge_mapping():
 	# Маппер по декторам и узлам
 	# Айди детектора, айди узла, дистанция в метрах.
 
-	client.command(f"""
-	CREATE TABLE IF NOT EXISTS {db}.{name}
+	sql = f"""
+	CREATE TABLE IF NOT EXISTS {name}
 	(
-		detector_id String,
-		edge_id UInt64,
-		distance_m Float64
+		detector_id TEXT,
+		edge_id BIGINT,
+		distance_m FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY (detector_id, edge_id)
 	"""
-	)
+
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
+
+	
 
 def create_table_detector_model_comprasion():
 	name = "detector_model_comprasion"
@@ -146,23 +188,28 @@ def create_table_detector_model_comprasion():
 	# Склеивание фактических данных и данных с модели
 	# Айди детектора, Айди узла, реальная интенсивность, интенсивность модели, скорость модели, вместимость человек, дистанция, абсолютная ошибка, средне квадратичная ошибка
 
-	client.command(f"""
-	CREATE TABLE IF NOT EXISTS {db}.{name}
+	sql = f"""
+	CREATE TABLE IF NOT EXISTS {name}
 	(
-		detector_id String,
-		edge_id UInt64,
-		actual_intensity Float64,
-		model_intensity Float64,
-		model_speed Float64, 
-		passenger_flow Float64,
-		distance_m Float64,
-		absolute_error Float64,
-		percentage_error Nullable(Float64)
+		detector_id TEXT,
+		edge_id BIGINT,
+		actual_intensity FLOAT,
+		model_intensity FLOAT,
+		model_speed FLOAT, 
+		passenger_flow FLOAT,
+		distance_m FLOAT,
+		absolute_error FLOAT,
+		percentage_error FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY (detector_id, edge_id)
 	"""
-	)
+
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
+
+
+
 
 # Необходимы для модуля Д
 
@@ -172,17 +219,21 @@ def create_table_od_matrix():
 	# Склеивание фактических данных и данных с модели
 	# Айди детектора, Айди узла, реальная интенсивность, интенсивность модели, скорость модели, вместимость человек, дистанция, абсолютная ошибка, средне квадратичная ошибка
 
-	client.command(f"""
-	CREATE TABLE IF NOT EXISTS {db}.{name}
+	sql = f"""
+	CREATE TABLE IF NOT EXISTS {name}
 	(
-		origin_id UInt64,
-		destination_id UInt64,
-		flow Float64
+		origin_id BIGINT,
+		destination_id BIGINT,
+		flow FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY(origin_id, destination_id)
 	"""
-	)
+
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
+
+	
 
 
 def create_table_accessibility_results():
@@ -191,33 +242,38 @@ def create_table_accessibility_results():
 	# Склеивание фактических данных и данных с модели
 	# Айди детектора, Айди узла, реальная интенсивность, интенсивность модели, скорость модели, вместимость человек, дистанция, абсолютная ошибка, средне квадратичная ошибка
 
-	client.command(f"""
-	CREATE TABLE {db}.{name}
+	sql = f"""
+	CREATE TABLE {name}
 	(
-		zone_id UInt64,
-		accessibility Float64
+		zone_id BIGINT,
+		accessibility FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY zone_id;
 	"""
-	)
+
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
+
 
 def create_table_validation_metric(): 
 	name = "validation_metrics"
 
-	client.command(f"""CREATE TABLE {db}.validation_metrics
+	sql = f"""CREATE TABLE {name}
 	(
-		metric String,
-		value Float64
+		metric TEXT,
+		value FLOAT
 	)
-	ENGINE = MergeTree
-	ORDER BY metric""")
+	"""
+
+	with conn.cursor() as cursor:
+		cursor.execute(sql)
+
+	conn.commit()
 
 
 
 def init_db():
-	client.command(f"DROP DATABASE IF EXISTS {db}")
-	client.command(f"CREATE DATABASE IF NOT EXISTS {db}")
 
 	create_table_detector_edge_mapping()
 	create_table_detector_model_comprasion()
